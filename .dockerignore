@@ -1,0 +1,10 @@
+# Whitelist approach: ignore everything, then re-include only the backend.
+# Keeps the multi-hundred-MB frontend/build dirs out of the build context.
+*
+!api
+!Dockerfile
+
+# Trim noise that lives inside api/.
+api/__pycache__
+**/*.pyc
+.env*

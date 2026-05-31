@@ -55,6 +55,7 @@ The example above generated the keynote clip in 55 seconds on
 - [Persistence](#persistence)
 - [Error model](#error-model)
 - [Helper scripts](#helper-scripts)
+- [Deployment (Vercel + Cloud Run)](#deployment-vercel--cloud-run)
 - [Troubleshooting](#troubleshooting)
 
 ## Architecture
@@ -579,6 +580,71 @@ so it's clear which model is responsible.
   `predictLongRunning` (Veo).
 - **`list_image_models.py`** — lists Gemini multimodal image models and Imagen
   models on your key.
+
+## Deployment (Vercel + Cloud Run)
+
+The same `/api/*` proxy that glues the two processes in dev also works in
+production: the **Next.js frontend deploys to Vercel** and the **FastAPI
+backend deploys to Google Cloud Run**. Vercel rewrites `/api/*` to the Cloud
+Run URL, so the browser only ever talks to one origin (no CORS).
+
+```
+Browser ──► Vercel (Next.js) ──/api/*──► Cloud Run (FastAPI) ──► Gemini / Veo
+                 rewrite via API_PROXY_TARGET
+```
+
+### Why this split
+
+Vercel serverless functions can't host the backend well: the Veo job polls for
+up to ~10 min in a background thread and keeps job state in memory — both die
+under serverless timeouts and scale-to-zero. Cloud Run keeps a warm container
+with CPU always allocated, so the worker thread survives. The frontend, by
+contrast, is a perfect Vercel fit.
+
+### Backend → Cloud Run
+
+Files: [`Dockerfile`](./Dockerfile), [`.dockerignore`](./.dockerignore),
+[`deploy-backend.sh`](./deploy-backend.sh). The image is built in the cloud via
+Cloud Build, so **no local Docker is needed**.
+
+```bash
+# one-time
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com
+
+# deploy (server-side key optional; omit for BYO-key mode)
+PROJECT_ID=YOUR_PROJECT_ID REGION=us-central1 \
+  GOOGLE_API_KEY=your-gemini-key \
+  ./deploy-backend.sh
+```
+
+The script deploys with deliberate flags:
+
+| Flag | Why |
+|---|---|
+| `--no-cpu-throttling` | keep CPU on so the background Veo polling thread runs between requests |
+| `--min-instances 1` / `--max-instances 1` | one warm instance so the in-memory `_jobs` table stays consistent across status/file polls |
+| `--memory 1Gi` | holds the SDK plus a few-MB MP4 in memory |
+| `--timeout 300` | submit/status/file calls are quick |
+| `--allow-unauthenticated` | the frontend proxies anonymously |
+
+It prints the service URL (and `…/api/health`) when done.
+
+> **Scaling note:** the single-instance setup is intentional because job state
+> and video bytes live in memory. To scale horizontally, externalize job state
+> (e.g. Firestore/Redis) and store MP4s in GCS, then raise `--max-instances`.
+
+### Frontend → Vercel
+
+1. Import the GitHub repo into Vercel (framework auto-detected as Next.js).
+2. Set an env var **`API_PROXY_TARGET`** = the Cloud Run URL from the deploy
+   step (e.g. `https://soundbite-api-xxxx.us-central1.run.app`).
+3. Deploy. `next.config.mjs` reads `API_PROXY_TARGET` and rewrites `/api/*`
+   to Cloud Run; locally it still falls back to `http://127.0.0.1:8000`.
+
+If you set a server-side `GOOGLE_API_KEY` on Cloud Run, the app works out of the
+box; otherwise users supply their own key in the UI (BYO-key mode).
 
 ## Troubleshooting
 
