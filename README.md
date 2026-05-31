@@ -635,6 +635,20 @@ It prints the service URL (and `…/api/health`) when done.
 > and video bytes live in memory. To scale horizontally, externalize job state
 > (e.g. Firestore/Redis) and store MP4s in GCS, then raise `--max-instances`.
 
+> **TODO — harden the Gemini key into Secret Manager.** The current deploy
+> passes `GOOGLE_API_KEY` as a plaintext Cloud Run env var (fine for testing,
+> visible to anyone with project access). Move it to Secret Manager and mount
+> it instead:
+>
+> ```bash
+> echo -n "YOUR_GEMINI_KEY" | gcloud secrets create gemini-api-key --data-file=-
+> # grant the Cloud Run runtime service account read access, then redeploy with:
+> gcloud run services update soundbite-api --region us-central1 \
+>   --set-secrets GOOGLE_API_KEY=gemini-api-key:latest
+> ```
+>
+> Then drop `GOOGLE_API_KEY` from `deploy-backend.sh`'s `--set-env-vars`.
+
 ### Frontend → Vercel
 
 1. Import the GitHub repo into Vercel (framework auto-detected as Next.js).
