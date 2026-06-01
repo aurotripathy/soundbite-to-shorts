@@ -17,7 +17,7 @@ pipeline left-to-right:
    action, scene, style, camera angle, camera movement, sound effects,
    dialogue). Gemini expands them into a single cinematic Veo prompt, which
    appears editable in the **Structured Prompt** card below the button.
-3. **Generate Video Clip** — the grounding frame from step 1 is auto-attached
+3. **Generate Video Short** — the grounding frame from step 1 is auto-attached
    as the reference image (or you can upload your own). Hit **Gen Video** and
    Veo renders an 8-second 16:9 clip. The player below shows status, elapsed
    time, and a **Download MP4** button when it's done.

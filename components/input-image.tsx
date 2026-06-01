@@ -96,7 +96,7 @@ export function InputImage() {
           htmlFor="image"
           className="text-lg font-semibold text-foreground"
         >
-          3. Generate Video Clip
+          3. Generate Video Short
         </label>
         <p className="text-sm text-muted-foreground">
           Send the structured prompt to Veo. The first frame from step 1
