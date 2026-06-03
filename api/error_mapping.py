@@ -199,6 +199,26 @@ def humanize(exc: BaseException, *, context: str = "") -> Dict[str, Any]:
             "technical": raw,
         }
 
+    # --- Empty / filtered Veo result ----------------------------------------
+    if (
+        "returned no video" in lower
+        or "no video object" in lower
+        or "empty result" in lower
+    ):
+        return {
+            "code": "NO_VIDEO",
+            "message": _with_context(
+                "The model finished but returned no video.", context
+            ),
+            "hint": (
+                "This usually means a safety filter on the prompt or the "
+                "reference image, or a transient model hiccup. Rephrase the "
+                "prompt, remove identifying details (real names, public "
+                "figures, brands) or the reference image, and try again."
+            ),
+            "technical": raw,
+        }
+
     # --- Generic invalid argument (catch-all 400 from upstream) -------------
     if "invalid_argument" in lower or " 400 " in raw:
         return {

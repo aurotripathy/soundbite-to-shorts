@@ -473,7 +473,37 @@ def _run_video_job(
         if not operation.response:
             raise RuntimeError("Operation done but no response.")
 
-        video = operation.result.generated_videos[0].video
+        # Veo can finish "successfully" yet return no usable video — most
+        # often the output was filtered by safety (RAI), which surfaces as an
+        # empty / None generated_videos list rather than an error. Handle that
+        # explicitly so we don't blow up with "NoneType is not subscriptable".
+        result = operation.result or operation.response
+        generated = getattr(result, "generated_videos", None) if result else None
+
+        if not generated:
+            reasons = getattr(result, "rai_media_filtered_reasons", None)
+            count = getattr(result, "rai_media_filtered_count", None)
+            if reasons:
+                detail = "; ".join(str(r) for r in reasons)
+                raise RuntimeError(
+                    f"Veo returned no video — output blocked by safety "
+                    f"filters: {detail}"
+                )
+            if count:
+                raise RuntimeError(
+                    f"Veo returned no video — {count} output(s) blocked by "
+                    f"safety filters."
+                )
+            raise RuntimeError(
+                "Veo returned no video (empty result). This is usually a "
+                "transient model issue or a safety block; try again or "
+                "rephrase the prompt / remove the reference image."
+            )
+
+        video = getattr(generated[0], "video", None)
+        if video is None:
+            raise RuntimeError("Veo result contained no video object.")
+
         data = getattr(video, "video_bytes", None)
         if data is None:
             # Gemini Developer API returns a File ref; fetch the bytes.
