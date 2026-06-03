@@ -75,28 +75,28 @@ const STYLE_PRESETS: CameraAnglePreset[] = [
     value: 'cinematic realism',
     label: 'Cinematic Realism',
     description:
-      'Polished, film-like footage with realistic lighting, shallow depth of field, and cinematic color grading.',
+      'Film-quality visuals with realistic subjects, dramatic lighting, intentional camera movement, and polished Hollywood-style production values.',
     bestFor: 'Ads, trailers, brand videos.',
   },
   {
     value: 'UGC (authentic handheld user-generated content)',
     label: 'UGC',
     description:
-      'Authentic, casual, phone-shot look — handheld feel, natural lighting, personal and unpolished.',
+      'Casual, authentic-looking content that feels self-recorded on a smartphone by a real person.',
     bestFor: 'TikTok, Instagram, influencer content.',
   },
   {
     value: 'documentary',
     label: 'Documentary',
     description:
-      'Natural, observational style with grounded lighting and real-world settings.',
+      'Informative, observational storytelling that presents people, events, or subjects with a factual and realistic perspective.',
     bestFor: 'Educational, storytelling, news.',
   },
   {
     value: 'anime / manga',
     label: 'Anime/Manga',
     description:
-      'Stylized 2D animation with bold linework, expressive characters, and vibrant colors.',
+      'Stylized illustrated visuals inspired by Japanese animation and comics, emphasizing expressive characters and dramatic storytelling.',
     bestFor: 'Entertainment, gaming, stylized marketing.',
   },
 ];
