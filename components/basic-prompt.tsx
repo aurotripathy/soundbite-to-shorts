@@ -70,6 +70,37 @@ const CAMERA_ANGLES: CameraAnglePreset[] = [
   },
 ];
 
+const STYLE_PRESETS: CameraAnglePreset[] = [
+  {
+    value: 'cinematic realism',
+    label: 'Cinematic Realism',
+    description:
+      'Polished, film-like footage with realistic lighting, shallow depth of field, and cinematic color grading.',
+    bestFor: 'Ads, trailers, brand videos.',
+  },
+  {
+    value: 'UGC (authentic handheld user-generated content)',
+    label: 'UGC',
+    description:
+      'Authentic, casual, phone-shot look — handheld feel, natural lighting, personal and unpolished.',
+    bestFor: 'TikTok, Instagram, influencer content.',
+  },
+  {
+    value: 'documentary',
+    label: 'Documentary',
+    description:
+      'Natural, observational style with grounded lighting and real-world settings.',
+    bestFor: 'Educational, storytelling, news.',
+  },
+  {
+    value: 'anime / manga',
+    label: 'Anime/Manga',
+    description:
+      'Stylized 2D animation with bold linework, expressive characters, and vibrant colors.',
+    bestFor: 'Entertainment, gaming, stylized marketing.',
+  },
+];
+
 const CAMERA_MOVEMENTS: CameraAnglePreset[] = [
   {
     value: 'push-in (zoom or physical move forward)',
@@ -203,11 +234,14 @@ export function BasicPrompt() {
           onChange={(v) => setKeyword('scene', v)}
           placeholder="in a classroom, presenting in front of students"
         />
-        <Field
+        <PresetSelectField
           label="Style"
+          helpTitle="4 video styles"
+          helpSubtitle="Pick the overall look and feel Gemini should bake into the prompt."
+          presets={STYLE_PRESETS}
           value={keywords.style}
           onChange={(v) => setKeyword('style', v)}
-          placeholder="photorealistic"
+          placeholder="Choose a style…"
         />
         <PresetSelectField
           label="Camera angle"
