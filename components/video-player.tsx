@@ -112,7 +112,7 @@ export function VideoPlayer() {
     jobStatus === 'queued'
       ? 'Queued…'
       : jobStatus === 'running'
-        ? 'Generating clip… (typically 1–5 minutes)'
+        ? 'Generating clip… (typically 1–2 minutes)'
         : jobStatus === 'done'
           ? completedElapsed
             ? `Completed in ${completedElapsed}`
