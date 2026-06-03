@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Download, Play } from 'lucide-react';
 import { Button } from './ui/button';
+import { Progress } from '@/components/ui/progress';
 import { ErrorBanner } from './error-banner';
 import {
   errorFromException,
@@ -18,15 +19,35 @@ import {
 import { formatElapsed, formatModelName } from '@/lib/format';
 import { useWorkspace } from '@/lib/workspace-context';
 
+// Veo reports no real progress percentage — a job is simply "running" until
+// it's "done". So we synthesize progress from elapsed time with a curve that
+// eases toward (but never reaches) 100%, and only snap to 100% when the job
+// actually completes. This avoids the classic lie of a bar parked at 100%
+// while the model is still rendering.
+function estimateProgress(
+  elapsedMs: number,
+  status: 'idle' | 'queued' | 'running' | 'done' | 'error',
+): number {
+  if (status === 'done') return 100;
+  if (status === 'queued') return 5;
+  if (status !== 'running') return 0;
+  // 1 - e^(-t/τ): with τ≈33s the bar reaches ~90% near 75s, then crawls.
+  const TAU_MS = 33_000;
+  const CEILING = 95;
+  const pct = 100 * (1 - Math.exp(-elapsedMs / TAU_MS));
+  return Math.min(CEILING, Math.max(5, Math.round(pct)));
+}
+
 export function VideoPlayer() {
   const { jobId, jobStatus, jobError, jobStartedAt, setJob, videoModel } =
     useWorkspace();
 
-  // 1s tick for the live elapsed counter while running.
+  // Sub-second tick while running so the elapsed counter and the progress
+  // bar advance smoothly.
   const [, force] = useState(0);
   useEffect(() => {
     if (jobStatus !== 'queued' && jobStatus !== 'running') return;
-    const handle = setInterval(() => force((n) => n + 1), 1000);
+    const handle = setInterval(() => force((n) => n + 1), 500);
     return () => clearInterval(handle);
   }, [jobStatus]);
 
@@ -75,10 +96,15 @@ export function VideoPlayer() {
     }
   }, [jobStatus, jobStartedAt, completedElapsed]);
 
+  const elapsedMs =
+    (jobStatus === 'queued' || jobStatus === 'running') && jobStartedAt
+      ? Date.now() - jobStartedAt
+      : 0;
   const elapsedRunning =
     (jobStatus === 'queued' || jobStatus === 'running') && jobStartedAt
-      ? formatElapsed(Date.now() - jobStartedAt)
+      ? formatElapsed(elapsedMs)
       : null;
+  const progress = estimateProgress(elapsedMs, jobStatus);
 
   const modelLabel = formatModelName(videoModel) || 'Veo';
 
@@ -119,7 +145,7 @@ export function VideoPlayer() {
               />
             </div>
           ) : jobStatus === 'queued' || jobStatus === 'running' ? (
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <div className="flex w-full flex-col items-center gap-3 px-6 text-muted-foreground">
               <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <div className="flex flex-col items-center gap-1">
                 <p className="text-sm">
@@ -133,6 +159,16 @@ export function VideoPlayer() {
                     .filter(Boolean)
                     .join(' · ')}
                 </p>
+              </div>
+              <div className="flex w-full max-w-xs flex-col gap-1.5">
+                <Progress
+                  value={progress}
+                  aria-label="Video generation progress (estimated)"
+                />
+                <div className="flex justify-between text-[11px] tabular-nums">
+                  <span>{jobStatus === 'queued' ? 'Starting…' : 'Rendering…'}</span>
+                  <span>{progress}%</span>
+                </div>
               </div>
             </div>
           ) : (
